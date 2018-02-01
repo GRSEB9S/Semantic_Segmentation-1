@@ -4,7 +4,7 @@ import helper
 import warnings
 from distutils.version import LooseVersion
 import project_tests as tests
-
+import time
 
 # Check TensorFlow Version
 assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer.  You are using {}'.format(tf.__version__)
@@ -59,40 +59,62 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :return: The Tensor for the last layer of output
     """
 
+    
+    tf.Print(vgg_layer3_out, [tf.shape(vgg_layer3_out[1:3])], message = "Shape of layer3_out = ")
+    tf.Print(vgg_layer4_out, [tf.shape(vgg_layer4_out[1:3])], message = "Shape of layer4_out = ")
+    tf.Print(vgg_layer7_out, [tf.shape(vgg_layer7_out[1:3])], message = "Shape of layer7_out = ")
+
+    kernel_regularisation = tf.contrib.layers.l2_regularizer(1e-3)
+
     vgg_layer3_out = tf.multiply(vgg_layer3_out, 0.0001)
     vgg_layer4_out = tf.multiply(vgg_layer4_out, 0.01)
 
     #1x1 conv for the layer7 output
     new_layer7_1x1_out = tf.layers.conv2d(vgg_layer7_out, filters = num_classes, kernel_size = (1,1), strides = (1,1),
         name = 'new_layer7_1x1_out', kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01),
-        activation = tf.nn.relu)
+        kernel_regularizer = kernel_regularisation, activation = tf.nn.relu)
+    tf.Print(new_layer7_1x1_out, [tf.shape(new_layer7_1x1_out[1:3])], message = "Shape of new_layer7_1x1_out = ")
+
 
     new_layer7_1x1_out_upsampled = tf.layers.conv2d_transpose(new_layer7_1x1_out, filters = num_classes, kernel_size = (3,3),
         strides = (2,2), name = 'new_layer7_1x1_out_upsampled', padding = 'same', 
+        kernel_regularizer = kernel_regularisation, 
         kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01), activation = tf.nn.relu)
+    tf.Print(new_layer7_1x1_out_upsampled, [tf.shape(new_layer7_1x1_out_upsampled[1:3])], 
+        message = "Shape of new_layer7_1x1_out_upsampled = ")
 
     #1x1 conv2d for layer4 output
     new_layer4_1x1_out = tf.layers.conv2d(vgg_layer4_out, filters = num_classes, kernel_size = (1,1), strides = (1,1),
         name = 'new_layer4_1x1_out', kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01),
-        activation = tf.nn.relu)
+        kernel_regularizer = kernel_regularisation, activation = tf.nn.relu)
+    tf.Print(new_layer4_1x1_out, [tf.shape(new_layer4_1x1_out[1:3])], message = "Shape of new_layer4_1x1_out = ")
 
     #combin layer 4 and 7
     new_layer47_combined = tf.add(new_layer4_1x1_out, new_layer7_1x1_out_upsampled, name = 'new_layer47_combined')
+    tf.Print(new_layer47_combined, [tf.shape(new_layer47_combined[1:3])], message = "Shape of new_layer47_combined = ")
 
     #upsample combined layer 4 and 7
     new_layer47_combined_upsampled = tf.layers.conv2d_transpose(new_layer47_combined, filters = num_classes, 
         kernel_size = (3,3), strides = (2,2), name = 'new_layer47_combined_upsampled', padding = 'same', 
+        kernel_regularizer = kernel_regularisation, 
         kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01), activation = tf.nn.relu)
+    tf.Print(new_layer47_combined_upsampled, [tf.shape(new_layer47_combined_upsampled[1:3])],
+     message = "Shape of new_layer47_combined_upsampled = ")
+
 
     new_layer3_1x1_out = tf.layers.conv2d(vgg_layer3_out, filters = num_classes, kernel_size = (1,1), strides = (1,1),
+        kernel_regularizer = kernel_regularisation,
         name = 'new_layer3_1x1_out', kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01), 
         activation = tf.nn.relu)
+    tf.Print(new_layer3_1x1_out, [tf.shape(new_layer3_1x1_out[1:3])], message = "Shape of new_layer3_1x1_out = ")
 
     final = tf.add(new_layer3_1x1_out, new_layer47_combined_upsampled)
+    tf.Print(final, [tf.shape(final[1:3])], message = "Shape of final = ")
 
     final_upsampled_8x = tf.layers.conv2d_transpose(final, filters = num_classes, kernel_size = (16,16), strides = (8,8),
         kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01), name = 'final_upsampled_8x', padding = 'same', 
-        activation = tf.nn.relu)
+        kernel_regularizer = kernel_regularisation, activation = tf.nn.relu)
+    tf.Print(final_upsampled_8x, [tf.shape(final_upsampled_8x[1:3])], message = "Shape of final_upsampled_8x= ")
 
     return final_upsampled_8x
 
@@ -113,11 +135,15 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     correct_label = tf.reshape(correct_label, (-1,num_classes))
     cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = logits, labels = correct_label))
 
+    reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+    reg_constant = 1 # Choose an appropriate one.
+    loss = cross_entropy_loss + reg_constant * sum(reg_losses)
+
     optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate)
 
-    opt = optimizer.minimize(cross_entropy_loss)
+    opt = optimizer.minimize(loss)
 
-    return logits, opt, cross_entropy_loss
+    return logits, opt, loss
 
 print ("Test Optimize function")
 tests.test_optimize(optimize)
@@ -138,16 +164,23 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param keep_prob: TF Placeholder for dropout keep probability
     :param learning_rate: TF Placeholder for learning rate
     """
-    # TODO: Implement function
+    #Implement function
     print ("*******************TRAINING MODEL*******************\n")
     sess.run(tf.global_variables_initializer())
     for i in range(epochs):
         print ("Epoch {}".format(i+1))
+        t1 = time.time()
+        l = 0
+        count  = 0
         for image, label in get_batches_fn(batch_size):
             _, loss = sess.run([train_op, cross_entropy_loss], 
                 feed_dict = {input_image: image, correct_label: label,keep_prob: 0.5, learning_rate: 0.0009})
+            l += loss
+            count += 1 
             print ("Loss = {:.3f}".format(loss))
-
+        t2 = time.time() - t1
+        print ("Epoch_{} = {:.2f}s, Avg_Loss = {:.3f}".format(i+1, t2, l/count))
+        
 print ("Test Training function")              
 tests.test_train_nn(train_nn)
 
@@ -178,8 +211,8 @@ def run():
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
         # Build NN using load_vgg, layers, and optimize function
-        epochs = 1
-        batch_size = 1
+        epochs = 10
+        batch_size = 10
 
         correct_labels = tf.placeholder(tf.int32, [None, None, None, num_classes], name = 'correct_labels')
         learning_rate = tf.placeholder(tf.float32, name = 'learning_rate')
@@ -195,7 +228,8 @@ def run():
              correct_labels, keep_prob, learning_rate)        
 
         # Save inference data using helper.save_inference_samples
-        helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
+        helper.save_inference_samples(runs_dir=runs_dir, data_dir=data_dir, sess=sess,image_shape=image_shape,
+        logits = logits, keep_prob=keep_prob, input_image=input_image)
 
         # Apply the trained model to a video
 
