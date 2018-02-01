@@ -45,6 +45,7 @@ def load_vgg(sess, vgg_path):
     
     return tensor_vgg_input, tensor_vgg_keep_prob, tensor_vgg_layer3_out, tensor_vgg_layer4_out, tensor_vgg_layer7_out
 
+print ("Test VGG load function")
 tests.test_load_vgg(load_vgg, tf)
 
 
@@ -95,6 +96,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     return final_upsampled_8x
 
+print ("Test layers function")
 tests.test_layers(layers)
 
 
@@ -107,8 +109,17 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :param num_classes: Number of classes to classify
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
-    # TODO: Implement function
-    return None, None, None
+    logits = tf.reshape(nn_last_layer, (-1, num_classes))
+
+    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = logits, labels = correct_label))
+
+    optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate)
+
+    opt = optimizer.minimize(cross_entropy_loss)
+
+    return logits, opt, cross_entropy_loss
+
+print ("Test Optimize function")
 tests.test_optimize(optimize)
 
 
@@ -128,7 +139,16 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param learning_rate: TF Placeholder for learning rate
     """
     # TODO: Implement function
-    pass
+    print ("*******************TRAINING MODEL*******************\n")
+    sess.run(tf.global_variables_initializer())
+    for i in range(epochs):
+        print ("Epoch {}".format(i+1))
+        for image, label in get_batches_fn(batch_size):
+            _, loss = sess.run([train_op, cross_entropy_loss], 
+                feed_dict = {input_image: image, correct_label: label,keep_prob: 0.5, learning_rate: 0.0009})
+            print ("Loss = {:.3f}".format(loss))
+
+print ("Test Training function")              
 tests.test_train_nn(train_nn)
 
 
@@ -137,6 +157,8 @@ def run():
     image_shape = (160, 576)
     data_dir = './data'
     runs_dir = './runs'
+
+    print ("Test for KITTI dataset")
     tests.test_for_kitti_dataset(data_dir)
 
     # Download pretrained vgg model
@@ -155,14 +177,27 @@ def run():
         # OPTIONAL: Augment Images for better results
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
-        # TODO: Build NN using load_vgg, layers, and optimize function
+        # Build NN using load_vgg, layers, and optimize function
+        epochs = 1
+        batch_size = 1
 
-        # TODO: Train NN using the train_nn function
+        correct_labels = tf.placeholder(tf.int32, [None, None, None, num_classes], name = 'correct_labels')
+        learning_rate = tf.placeholder(tf.float32, name = 'learning_rate')
 
-        # TODO: Save inference data using helper.save_inference_samples
-        #  helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
+        input_image, keep_prob, vgg3 , vgg4 , vgg7 = load_vgg(sess, vgg_path)
 
-        # OPTIONAL: Apply the trained model to a video
+        nn_last_layer = layers(vgg3, vgg4,vgg7, num_classes)
+
+        logits, train_op, cross_entropy = optimize(nn_last_layer, correct_labels, learning_rate, num_classes)
+
+        # Train NN using the train_nn function
+        train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy, input_image,
+             correct_labels, keep_prob, learning_rate)        
+
+        # Save inference data using helper.save_inference_samples
+        helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
+
+        # Apply the trained model to a video
 
 
 if __name__ == '__main__':
