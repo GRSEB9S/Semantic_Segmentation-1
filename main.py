@@ -57,8 +57,44 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :param num_classes: Number of classes to classify
     :return: The Tensor for the last layer of output
     """
-    # TODO: Implement function
-    return None
+
+    vgg_layer3_out = tf.multiply(vgg_layer3_out, 0.0001)
+    vgg_layer4_out = tf.multiply(vgg_layer4_out, 0.01)
+
+    #1x1 conv for the layer7 output
+    new_layer7_1x1_out = tf.layers.conv2d(vgg_layer7_out, filters = num_classes, kernel_size = (1,1), strides = (1,1),
+        name = 'new_layer7_1x1_out', kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01),
+        activation = tf.nn.relu)
+
+    new_layer7_1x1_out_upsampled = tf.layers.conv2d_transpose(new_layer7_1x1_out, filters = num_classes, kernel_size = (3,3),
+        strides = (2,2), name = 'new_layer7_1x1_out_upsampled', padding = 'same', 
+        kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01), activation = tf.nn.relu)
+
+    #1x1 conv2d for layer4 output
+    new_layer4_1x1_out = tf.layers.conv2d(vgg_layer4_out, filters = num_classes, kernel_size = (1,1), strides = (1,1),
+        name = 'new_layer4_1x1_out', kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01),
+        activation = tf.nn.relu)
+
+    #combin layer 4 and 7
+    new_layer47_combined = tf.add(new_layer4_1x1_out, new_layer7_1x1_out_upsampled, name = 'new_layer47_combined')
+
+    #upsample combined layer 4 and 7
+    new_layer47_combined_upsampled = tf.layers.conv2d_transpose(new_layer47_combined, filters = num_classes, 
+        kernel_size = (3,3), strides = (2,2), name = 'new_layer47_combined_upsampled', padding = 'same', 
+        kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01), activation = tf.nn.relu)
+
+    new_layer3_1x1_out = tf.layers.conv2d(vgg_layer3_out, filters = num_classes, kernel_size = (1,1), strides = (1,1),
+        name = 'new_layer3_1x1_out', kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01), 
+        activation = tf.nn.relu)
+
+    final = tf.add(new_layer3_1x1_out, new_layer47_combined_upsampled)
+
+    final_upsampled_8x = tf.layers.conv2d_transpose(final, filters = num_classes, kernel_size = (3,3), strides = (2,2),
+        kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01), name = 'final_upsampled_8x', padding = 'same', 
+        activation = tf.nn.relu)
+
+    return final_upsampled_8x
+
 tests.test_layers(layers)
 
 

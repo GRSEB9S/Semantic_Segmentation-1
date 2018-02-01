@@ -100,4 +100,9 @@ ENV/
 # mypy
 .mypy_cache/
 
+#data
+data/data_road.zip
+
+long_shelhamer_fcn.pdf
+
 RUNS/
