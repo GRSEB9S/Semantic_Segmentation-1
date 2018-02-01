@@ -24,7 +24,6 @@ def load_vgg(sess, vgg_path):
     :param vgg_path: Path to vgg folder, containing "variables/" and "saved_model.pb"
     :return: Tuple of Tensors from VGG model (image_input, keep_prob, layer3_out, layer4_out, layer7_out)
     """
-    # TODO: Implement function
     #   Use tf.saved_model.loader.load to load the model and weights
     vgg_tag = 'vgg16'
     vgg_input_tensor_name = 'image_input:0'
@@ -32,8 +31,20 @@ def load_vgg(sess, vgg_path):
     vgg_layer3_out_tensor_name = 'layer3_out:0'
     vgg_layer4_out_tensor_name = 'layer4_out:0'
     vgg_layer7_out_tensor_name = 'layer7_out:0'
+
+    tf.saved_model.loader.load(sess, [vgg_tag] , vgg_path)
+
+    graph = tf.get_default_graph()
+
+    tensor_vgg_input = graph.get_tensor_by_name(vgg_input_tensor_name)
+    tensor_vgg_keep_prob = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
+    tensor_vgg_layer3_out = graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
+    tensor_vgg_layer4_out = graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
+    tensor_vgg_layer7_out = graph.get_tensor_by_name(vgg_layer7_out_tensor_name) 
+
     
-    return None, None, None, None, None
+    return tensor_vgg_input, tensor_vgg_keep_prob, tensor_vgg_layer3_out, tensor_vgg_layer4_out, tensor_vgg_layer7_out
+
 tests.test_load_vgg(load_vgg, tf)
 
 
