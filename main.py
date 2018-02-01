@@ -227,6 +227,12 @@ def run():
         train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy, input_image,
              correct_labels, keep_prob, learning_rate)        
 
+        print("********************Saving the model********************")
+        model_save = "saved_model_" + time.time()
+        builder = tf.saved_model.builder.SavedModelBuilder(model_save)
+        builder.add_meta_graph_and_variables(sess, ["vgg16"])
+        builder.save()
+        print("***********************Model saved***********************")
         # Save inference data using helper.save_inference_samples
         helper.save_inference_samples(runs_dir=runs_dir, data_dir=data_dir, sess=sess,image_shape=image_shape,
         logits = logits, keep_prob=keep_prob, input_image=input_image)
