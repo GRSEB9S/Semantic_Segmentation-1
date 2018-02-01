@@ -90,7 +90,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     final = tf.add(new_layer3_1x1_out, new_layer47_combined_upsampled)
 
-    final_upsampled_8x = tf.layers.conv2d_transpose(final, filters = num_classes, kernel_size = (3,3), strides = (2,2),
+    final_upsampled_8x = tf.layers.conv2d_transpose(final, filters = num_classes, kernel_size = (16,16), strides = (8,8),
         kernel_initializer = tf.truncated_normal_initializer(stddev = 0.01), name = 'final_upsampled_8x', padding = 'same', 
         activation = tf.nn.relu)
 
