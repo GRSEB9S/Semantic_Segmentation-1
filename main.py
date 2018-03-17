@@ -71,21 +71,21 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     #1x1 conv for the layer7 output
     new_layer7_1x1_out = tf.layers.conv2d(vgg_layer7_out, filters = num_classes, kernel_size = (1,1), strides = (1,1),
         name = 'new_layer7_1x1_out', kernel_initializer = tf.truncated_normal_initializer(stddev = 0.001),
-        kernel_regularizer = kernel_regularisation, activation = tf.nn.relu)
+        kernel_regularizer = kernel_regularisation)
     tf.Print(new_layer7_1x1_out, [tf.shape(new_layer7_1x1_out[1:3])], message = "Shape of new_layer7_1x1_out = ")
 
 
     new_layer7_1x1_out_upsampled = tf.layers.conv2d_transpose(new_layer7_1x1_out, filters = num_classes, kernel_size = (3,3),
         strides = (2,2), name = 'new_layer7_1x1_out_upsampled', padding = 'same', 
         kernel_regularizer = kernel_regularisation, 
-        kernel_initializer = tf.truncated_normal_initializer(stddev = 0.001), activation = tf.nn.relu)
+        kernel_initializer = tf.truncated_normal_initializer(stddev = 0.001))
     tf.Print(new_layer7_1x1_out_upsampled, [tf.shape(new_layer7_1x1_out_upsampled[1:3])], 
         message = "Shape of new_layer7_1x1_out_upsampled = ")
 
     #1x1 conv2d for layer4 output
     new_layer4_1x1_out = tf.layers.conv2d(vgg_layer4_out_scaled, filters = num_classes, kernel_size = (1,1), strides = (1,1),
         name = 'new_layer4_1x1_out', kernel_initializer = tf.truncated_normal_initializer(stddev = 0.001),
-        kernel_regularizer = kernel_regularisation, activation = tf.nn.relu)
+        kernel_regularizer = kernel_regularisation)
     tf.Print(new_layer4_1x1_out, [tf.shape(new_layer4_1x1_out[1:3])], message = "Shape of new_layer4_1x1_out = ")
 
     #combin layer 4 and 7
@@ -96,15 +96,14 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     new_layer47_combined_upsampled = tf.layers.conv2d_transpose(new_layer47_combined, filters = num_classes, 
         kernel_size = (3,3), strides = (2,2), name = 'new_layer47_combined_upsampled', padding = 'same', 
         kernel_regularizer = kernel_regularisation, 
-        kernel_initializer = tf.truncated_normal_initializer(stddev = 0.001), activation = tf.nn.relu)
+        kernel_initializer = tf.truncated_normal_initializer(stddev = 0.001))
     tf.Print(new_layer47_combined_upsampled, [tf.shape(new_layer47_combined_upsampled[1:3])],
      message = "Shape of new_layer47_combined_upsampled = ")
 
 
     new_layer3_1x1_out = tf.layers.conv2d(vgg_layer3_out_scaled, filters = num_classes, kernel_size = (1,1), strides = (1,1),
         kernel_regularizer = kernel_regularisation,
-        name = 'new_layer3_1x1_out', kernel_initializer = tf.truncated_normal_initializer(stddev = 0.001), 
-        activation = tf.nn.relu)
+        name = 'new_layer3_1x1_out', kernel_initializer = tf.truncated_normal_initializer(stddev = 0.001))
     tf.Print(new_layer3_1x1_out, [tf.shape(new_layer3_1x1_out[1:3])], message = "Shape of new_layer3_1x1_out = ")
 
     final = tf.add(new_layer3_1x1_out, new_layer47_combined_upsampled)
@@ -175,7 +174,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         count  = 0
         for image, label in get_batches_fn(batch_size):
             _, loss = sess.run([train_op, cross_entropy_loss], 
-                feed_dict = {input_image: image, correct_label: label,keep_prob: 0.30, learning_rate: 0.0001})
+                feed_dict = {input_image: image, correct_label: label,keep_prob: 0.55, learning_rate: 0.0001})
             l += loss
             count += 1 
             print ("Loss = {:.3f}".format(loss))
@@ -220,8 +219,8 @@ def run():
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
         # Build NN using load_vgg, layers, and optimize function
-        epochs = 50
-        batch_size = 15
+        epochs = 30
+        batch_size = 2
 
         correct_labels = tf.placeholder(tf.int32, [None, None, None, num_classes], name = 'correct_labels')
         learning_rate = tf.placeholder(tf.float32, name = 'learning_rate')
