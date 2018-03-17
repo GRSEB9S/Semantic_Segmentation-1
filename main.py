@@ -179,15 +179,15 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
             count += 1 
             print ("Loss = {:.3f}".format(loss))
         t2 = time.time() - t1
-        print ("Epoch_{}, Run_time = {:.2f}s, Avg_Loss = {:.3f}".format(i+1, t2, l/count))
+        print ("Epoch_{} = {:.2f}s, Avg_Loss = {:.3f}".format(i+1, t2, l/count))
         if i %5 == 0 and i !=0:
             print("********************Saving the model*********************")
-            model_save = "saved_model_epoch_" + str(i+1)
+            model_save = "saved_model_epoch_" + str(i)
             builder = tf.saved_model.builder.SavedModelBuilder(model_save)
             builder.add_meta_graph_and_variables(sess, ["vgg16_semantic"])
             builder.save()
             print("***********************Model saved***********************")
-    print ("Total training time = {:.2f}s".format(time.time() - t0))
+    print ("Total training time ={:.2f}s".format(time.time() - t0))
 
 print ("Test Training function")              
 tests.test_train_nn(train_nn)
