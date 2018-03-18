@@ -9,6 +9,12 @@ In this project, the pixels of a road are labeled using a Fully Convolutional Ne
 <img src=./runs/44.png width="420" height= "150"> <img src=./runs/um_000044.png width="420" height= "150">
 <img src=./runs/47.png width="420" height= "150"> <img src=./runs/um_000047.png width="420" height= "150">
 <img src=./runs/49.png width="420" height= "150"> <img src=./runs/um_000049.png width="420" height= "150">
+<img src=./runs/23.png width="420" height= "150"> <img src=./runs/23_1.png width="420" height= "150">
+<img src=./runs/33.png width="420" height= "150"> <img src=./runs/33_1.png width="420" height= "150">
+<img src=./runs/36.png width="420" height= "150"> <img src=./runs/36_1.png width="420" height= "150">
+<img src=./runs/65.png width="420" height= "150"> <img src=./runs/65_1.png width="420" height= "150">
+<img src=./runs/83.png width="420" height= "150"> <img src=./runs/83_1.png width="420" height= "150">
+<img src=./runs/98.png width="420" height= "150"> <img src=./runs/98_1.png width="420" height= "150">
 
 ##### Dataset
 Downloaded the [Kitti Road dataset](http://www.cvlibs.net/datasets/kitti/eval_road.php) from [here](http://www.cvlibs.net/download.php?file=data_road.zip).  Extracted the dataset in the `data` folder.  This will create the folder `data_road` with all the training a test images.
